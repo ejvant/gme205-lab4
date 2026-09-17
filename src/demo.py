@@ -1,5 +1,6 @@
 import json
-from analysis import total_active_area, parcels_above_threshold, count_by_zone, development_candidates, intersecting_parcels
+from analysis import (total_active_area, parcels_above_threshold, count_by_zone, development_candidates, intersecting_parcels,
+classify_suitability_grid, count_suitable_cells)
 from spatial import Parcel, SpatialObject
 from shapely.geometry import box
 
@@ -87,3 +88,31 @@ for parcel in intersecting:
         "| Zone:", parcel.zone,
         "| Area:", parcel.area_sqm
     )
+
+# Raster suitability test
+
+with open("data/suitability_grid.json", "r") as file:
+    raster_data = json.load(file)
+
+slope_grid = raster_data["slope_deg"]
+flood_grid = raster_data["flood_m"]
+
+max_slope = raster_data["criteria"]["max_slope_deg"]
+max_flood = raster_data["criteria"]["max_flood_m"]
+
+suitability_grid = classify_suitability_grid(
+    slope_grid,
+    flood_grid,
+    max_slope,
+    max_flood
+)
+
+suitable_count = count_suitable_cells(
+    suitability_grid
+)
+
+print("Suitability grid:")
+for row in suitability_grid:
+    print(row)
+
+print("Suitable cells:", suitable_count)
