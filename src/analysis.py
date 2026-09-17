@@ -22,19 +22,14 @@ def count_by_zone(parcels):
         zone_counts[parcel.zone] += 1
     return zone_counts
 
-def is_development_candidate(parcel, min_area, allowed_zones):
-    if not parcel.is_active:
-        return False
-    if parcel.zone not in allowed_zones:
-        return False
-    if parcel.area_sqm < min_area:
-        return False
-    return True
-
 def development_candidates(parcels, min_area, allowed_zones):
     candidates = []
     for parcel in parcels:
-        if is_development_candidate(parcel, min_area, allowed_zones):
+        if (
+            parcel.is_active
+            and parcel.zone in allowed_zones
+            and parcel.area_sqm >= min_area
+        ):
             candidates.append(parcel)
     return candidates
 
