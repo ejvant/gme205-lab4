@@ -254,7 +254,7 @@ def is_development_candidate(parcel, min_area, allowed_zones):
 ```
 The `is_development_candidate()` function is responsible for evaluating one parcel, while `development_candidates()` is responsible for iterating through the collection and collecting the results. This separation makes the logic easier to read, test, and extend without repeating the same conditions in other parts of the program.
 
-## Transfer the Algorithmic Patter (Challenge 4)
+## Transfer the Algorithmic Pattern (Challenge 4)
 
 The parcel analysis and raster classification use different data representations, but they follow the same structure pattern.
 
