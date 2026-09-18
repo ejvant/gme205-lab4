@@ -213,3 +213,98 @@ BEGIN
 
 END
 ```
+
+## Change the Policy Without Rewriting the Algorithm (Challenge 1)
+
+The `development_candidates()` function was run using two different policy settings without changing its implementation.
+
+| Policy | Minimum Area | Allowed Zones | Result |
+|---|---:|---|---:|
+| Policy 1 | 5,000 m² | Residential, Commercial | 45 candidates |
+| Policy 2 | 7,000 m² | Residential, Commercial | 34 candidates |
+
+The same algorithm produced different results because the policy parameters were changed rather than the function itself. Increasing the minimum area from 5,000 m² to 7,000 m² reduced the number of qualifying parcels from 45 to 34.
+
+## Compose, Do Not Duplicate (Challenge 2)
+
+The development candidates inside the study area were obtained by composing two existing analysis functions. First, `development_candidates()` applies the active, zone, and minimum-area rules. Its result is then passed to `intersecting_parcels()`, which applies the spatial intersection rule.
+
+## Bad vs Good Refactor (Challenge 3)
+
+An earlier version placed all development-candidate rules directly inside the loop:
+```text
+for parcel in parcels:
+    if (
+        parcel.is_active
+        and parcel.zone in allowed_zones
+        and parcel.area_sqm >= min_area
+    ):
+        candidates.append(parcel)
+```
+The cleaner version separates the decision rule into a helper function:
+```text
+def is_development_candidate(parcel, min_area, allowed_zones):
+    if not parcel.is_active:
+        return False
+    if parcel.zone not in allowed_zones:
+        return False
+    if parcel.area_sqm < min_area:
+        return False
+    return True
+```
+The `is_development_candidate()` function is responsible for evaluating one parcel, while `development_candidates()` is responsible for iterating through the collection and collecting the results. This separation makes the logic easier to read, test, and extend without repeating the same conditions in other parts of the program.
+
+## Transfer the Algorithmic Patter (Challenge 4)
+
+The parcel analysis and raster classification use different data representations, but they follow the same structure pattern.
+
+For parcel analysis, the algorithm repeats over a collection of Parcel objects:
+```text
+FOR EACH parcel
+    CHECK conditions
+    SELECT or exclude the parcel
+END FOR
+```
+For raster classification, the algorithm repeats through rows and columns:
+```text
+FOR EACH row
+    FOR EACH column
+        CHECK slope and flood conditions
+        ASSIGN 1, 0, or NoData
+    END FOR
+END FOR
+```
+These specific parts are for data access and spatial rules. Parcel analysis uses object properties such as `is_active`, `zone`, and `area_sqm`, while raster classification accesses values using row and column positions and handles `NoData`.
+
+The structure idea is the same: sequence executes steps in order, selection evaluates conditions, and repetition processes multiple records or cells. Both algorithms also keep the analysis logic separate from data loading and visualization.
+
+## Reflection
+
+1. *Algorithm:* I chose the development-candidate analysis as the vector-analysis question. Writing first the algorithm and pseudocode helped me to separate the decision rules from the process of iterating through parcels. Instead of writing one large loop, I identified the required conditions first: the parcel must be active, must belong to an allowed zone, and must meet the minimum area. This led to a design where `is_development_candidate()` evaluates the rules for one parcel while `development_candidates()` handles the collection. The organized implementation makes the analysis easier to test, and the policy can be changed through parameters without rewriting the algorithm.
+
+2. *Control flow:* Sequence is present in the overall workflow. Specifically in loading the input data, constructing spatial objects, performing the analysis, and writing the results and visual outputs. Selection appears in the development-candidate rules and in the raster classification, where conditions must be met for a parcel or cell to be qualified. Repetition appears in the loops that process each parcel and in the nested row and column loops. These control structures in the algorithm helped the implementation traceable and predictable. 
+
+3. *Responsibility:* Spatial geometry behavior, such as checking whether two spatial objects intersect, is a behavior that belongs to `Parcel` or `SpatialObject`. This keeps geometry operations with the objects that own the geometry. A rule that belongs to `analysis.py` is determining whether a parcel is a development candidate. This is a decision involving a collection of parcels and policy parameters rather than an inherent property of a parcel itself. Separating these responsibilities makes the system easier to modify. 
+
+4. *Conditional Structure:* The specific design choice that prevents the development-candidate logic from becoming nested conditional chaos is the `is_development_candidate()` helper function. Each condition is checked separately with an early return when a parcel fails a requirement. This avoids repeating the same active, zone, and area conditions and keeps the main iteration easy to read.
+
+5. *Area Meaning:* The exercise uses `area_sqm` because the parcel geometry is represented using geographic coordinate system (longitude and latitude in decimal degrees) and not projected metric coordinate system. `geometry.area` computes area in the geometry's native coordinate units and would produce an area in coordinate-system units rather than a reliable value in square meters. The provided `area_sqm` attribute already represents the intended metric area of each parcel. Using it therefore preserves its correct meaning.
+
+6. *Vector vs Raster:* Repetition differs because vector processing iterates through a collection of individual `Parcel` objects, while raster processing uses two-dimensional repetition through rows and columns of cells. Each parcel is treated as an object with attributes and geometry. On the other hand, a raster cell is accessed through its row and column position and its corresponding value. However, both use the same structured pattern: repeat over a set of spatial elements, evaluate conditions for each element, and produce a result. he representation changes, but the structured-programming concepts of sequence, selection, and repetition remain the same.
+
+7. *Scale:* If the dataset increased to one million parcels or a 10,000 × 10,000 raster, the separation between the spatial objects, analysis functions, and workflow would still be useful. However, the current approach would become slower and more demanding in terms of memory. For one million parcels, I could use a spatial database or indexing. Processing the data in smaller batches is also beneficial. For a very large raster, using arrays and processing the data in chunks would be more efficient. he main idea of separating the data, analysis rules, and workflow would stay the same, while the way the data is stored and processed would be adapted for larger datasets.
+
+## Author
+Enoch Joshua V. Antonio  
+MS Geomatics Engineering
+
+## References
+
+- Python Documentation — More Control Flow Tools: https://docs.python.org/3/tutorial/controlflow.html
+- W3Schools — Python Tutorials: https://www.w3schools.com/python/
+- Python Documentation — `json` Module: https://docs.python.org/3/library/json.html
+- Shapely Documentation — `shape()`: https://shapely.readthedocs.io/
+- Shapely Documentation — Spatial Predicates and `intersects()`: https://shapely.readthedocs.io/
+- Matplotlib Documentation: https://matplotlib.org/stable/
+
+Edited on GitHub web interface and VS Code
